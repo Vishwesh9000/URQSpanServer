@@ -1,4 +1,4 @@
-import socket, matplotlib.pyplot as plt, time, random, numpy as np, csv
+import socket, matplotlib.pyplot as plt, time, random, numpy as np, csv, sys
 from multiprocessing import Process, Queue
 
 def listenForMeasurements(q):
@@ -7,7 +7,7 @@ def listenForMeasurements(q):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock.bind(("192.168.1.158", 55400)) #Change to your IP
+        sock.bind((findIP(), 55400)) #Change to your IP
         sock.listen(1)
         print("[LISTENER READY]")
         while True:
@@ -72,6 +72,34 @@ def plotData(q):
 
         fig.canvas.draw()          
         fig.canvas.flush_events()  
+
+def findIP():
+    ips = socket.gethostbyname_ex(socket.gethostname())[2]
+    if len(ips) == 0:
+        print("[ERROR] No IPs found")
+        sys.exit()
+    possibleIPs = [ip for ip in ips if ip.startswith("169.254.")]
+    if len(possibleIPs) > 1:
+        print(f"Pick IP number:")
+        for i, ip in enumerate(possibleIPs):
+            print(f"{i}:\t{ip}")
+        try:
+            num = int(input())
+            return possibleIPs[num]
+        except (ValueError, IndexError):
+            print(f"[ERROR] {num} not valid ip number")
+            print(f"Switching to first ip:\t{possibleIPs[0]}")
+            return possibleIPs[0]
+    elif len(possibleIPs) == 0:
+        print("[WARNING] No ethernet connection found")
+        print(f"[STATUS] Defaulting to WiFi IP: {ips[0]}")
+        return ips[0]
+    else:
+        print(f"[STATUS] Using {possibleIPs[0]} as IP")
+        return possibleIPs[0]
+    
+    
+
 
 def fakeMeasurements(q):
     while True:
