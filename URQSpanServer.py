@@ -15,9 +15,11 @@ def listenForMeasurements(q):
             print(f"Connected by {addr}")
             while True:
                 m = conn.recv(1024).decode()
+                print(f"[RECEIVED]\t{m}")
                 if not m: break
-                m ="".join([" "+i if i.isupper() else i for i in m]).split(":") #Decode camelcase
-                m[1] = int(m[1])
+                elif "<UNITS>" in m: continue
+                m ="".join([" "+i if i.isupper() else i for i in m]).split(",") #Decode camelcase
+                m[1] = float(m[1])
                 print(f"[RECEIVED]\t{m[0]}:\t{m[1]}")
                 q.put(m)
                 with open('measurements.csv', 'a', newline='') as file:
@@ -28,7 +30,7 @@ def plotData(q):
     measurements = {}
     plt.ion()  # Enable interactive mode
 
-    fig, axs = plt.subplots(2, 5) #shape and number of plots
+    fig, axs = plt.subplots(2, 4) #shape and number of plots
     axs = axs.flatten()  
     plt.show(block=False)  
 
@@ -59,7 +61,7 @@ def plotData(q):
 
             # Text
             axs[i].text(
-                0.05, 0.95, f"μ={mean:.1f}\nσ={stdDev:.1f}",
+                0.05, 0.95, f"μ={mean:.3f}\nσ={stdDev:.3f}",
                 transform=axs[i].transAxes,
                 verticalalignment='top',
                 fontsize=8,
