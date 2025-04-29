@@ -37,6 +37,8 @@ def plotData(q):
 
     fig, axs = plt.subplots(*graphDimensions) #shape and number of plots
     axs = axs.flatten()  
+    for ax in axs:
+        ax.ticklabel_format(useOffset=False)
     plt.show(block=False)  
 
     while True:
