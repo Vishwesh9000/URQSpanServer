@@ -1,6 +1,7 @@
 import socket, matplotlib.pyplot as plt, time, random, numpy as np, csv, sys
 from multiprocessing import Process, Queue
 
+graphDimensions = (2,4) #Rows and Columns of plots
 def listenForMeasurements(q):
     with open('measurements.csv', 'a', newline='') as file:
         file.write('\n\n\n')
@@ -30,7 +31,7 @@ def plotData(q):
     measurements = {}
     plt.ion()  # Enable interactive mode
 
-    fig, axs = plt.subplots(2, 4) #shape and number of plots
+    fig, axs = plt.subplots(*graphDimensions) #shape and number of plots
     axs = axs.flatten()  
     plt.show(block=False)  
 
@@ -43,7 +44,7 @@ def plotData(q):
                 measurements[m[0]] = np.append(measurements[m[0]], m[1])
 
 
-        for i, (key, val) in enumerate(list(measurements.items())[:10]): #Limits measurements to number of plots
+        for i, (key, val) in enumerate(list(measurements.items())[:graphDimensions[0]*graphDimensions[1]]): #Limits measurements to number of plots
             axs[i].cla()
             axs[i].set_title(key)
 
@@ -71,7 +72,7 @@ def plotData(q):
             axs[i].plot(range(1, val.size+1), val, color='blue')
 
             axs[i].set_title(key)
-
+            
         fig.canvas.draw()          
         fig.canvas.flush_events()  
 
