@@ -2,6 +2,10 @@ import socket, matplotlib.pyplot as plt, time, random, numpy as np, csv, sys
 from multiprocessing import Process, Queue
 
 graphDimensions = (2,4) #Rows and Columns of plots
+
+expectedMean = [None]*(graphDimensions[0]*graphDimensions[1]) #Expected mean for each graph
+expectedMean = [12, 20, 20, 25, 20, 10, 23, None] #Change or comment out to disable expectedMean
+
 def listenForMeasurements(q):
     with open('measurements.csv', 'a', newline='') as file:
         file.write('\n\n\n')
@@ -61,6 +65,7 @@ def plotData(q):
             axs[i].axhline(y=mean-3*stdDev, color='red', linestyle='--',alpha=.5)
 
             axs[i].axhline(y=mean, color='black', linestyle='--',alpha=.5)
+            axs[i].axhline(y=expectedMean[i], color='green', linestyle='--',alpha=.5)
 
             # Text
             axs[i].text(
