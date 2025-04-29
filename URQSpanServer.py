@@ -6,6 +6,9 @@ graphDimensions = (2,4) #Rows and Columns of plots
 expectedMean = [None]*(graphDimensions[0]*graphDimensions[1]) #Expected mean for each graph
 expectedMean = [12, 20, 20, 25, 20, 10, 23, None] #Change or comment out to disable expectedMean
 
+tolerance = [.15] * (graphDimensions[0]*graphDimensions[1]) #points that are not inside mean+-tolerance will be marked with a red dot 
+                                                            #(set to None to disable)
+
 def listenForMeasurements(q):
     with open('measurements.csv', 'a', newline='') as file:
         file.write('\n\n\n')
@@ -20,7 +23,7 @@ def listenForMeasurements(q):
             print(f"Connected by {addr}")
             while True:
                 m = conn.recv(1024).decode()
-                print(f"[RECEIVED]\t{m}")
+                print(f"[RECEIVED]\t\"{m}\"")
                 if not m: break
                 elif "<UNITS>" in m: continue
                 m ="".join([" "+i if i.isupper() else i for i in m]).split(",") #Decode camelcase
@@ -45,12 +48,18 @@ def plotData(q):
         while not q.empty():
             m = q.get()
             if m[0] not in measurements:
-                measurements[m[0]] = np.array([m[1]])
+                measurements[m[0]] = [np.array([m[1]]), []]
+                i = len(measurements)-1
+                if tolerance[i] and expectedMean[i] and abs(m[1]-expectedMean[i]) > tolerance[i]:
+                    measurements[m[0]][1].append(0)
             else:
-                measurements[m[0]] = np.append(measurements[m[0]], m[1])
+                measurements[m[0]][0] = np.append(measurements[m[0]][0], m[1])
 
+                i = list(measurements.keys()).index(m[0])
+                if tolerance[i] and expectedMean[i] and abs(m[1]-expectedMean[i]) > tolerance[i]:
+                    measurements[m[0]][1].append(measurements[m[0]][0].size-1)
 
-        for i, (key, val) in enumerate(list(measurements.items())[:graphDimensions[0]*graphDimensions[1]]): #Limits measurements to number of plots
+        for i, (key, (val, outliers)) in enumerate(list(measurements.items())[:graphDimensions[0]*graphDimensions[1]]): #Limits measurements to number of plots
             axs[i].cla()
             axs[i].set_title(key)
 
@@ -59,17 +68,35 @@ def plotData(q):
 
             axs[i].tick_params(axis='y', labelsize = 10)
             
-            # plot lines
+            # Stat lines
+
+            # Standard Deviation Lines
             for j in [-2,-1,1,2]:
                 axs[i].axhline(y=mean+j*stdDev, color='lightgray', linestyle=':',alpha=.5)
 
             axs[i].axhline(y=mean+3*stdDev, color='red', linestyle='--', alpha=.5)
             axs[i].axhline(y=mean-3*stdDev, color='red', linestyle='--',alpha=.5)
 
+            # Mean Line
             axs[i].axhline(y=mean, color='black', linestyle='--',alpha=.5)
-            axs[i].axhline(y=expectedMean[i], color='green', linestyle='--',alpha=.5)
 
-            # Text
+            if expectedMean[i]:
+                # Expected Mean Line
+                axs[i].axhline(y=expectedMean[i], color='green', linestyle='--',alpha=.5)
+
+                if tolerance[i]:
+                    # Tolerance Lines
+                    for j in [1, -1]:
+                        axs[i].axhline(y=expectedMean[i]+(tolerance[i]*j), color='orange', linestyle='--',alpha=.5)
+
+            # Graph lines
+            axs[i].plot(range(1, val.size+1), val, color='blue')
+
+            # Red dots for outliers
+            for outlierIndex in outliers:
+                axs[i].plot(outlierIndex+1, val[outlierIndex], marker='.',color='red')
+
+            # Statistical Parameters Text
             axs[i].text(
                 0.05, 0.95, f"μ={mean:.3f}\nσ={stdDev:.3f}",
                 transform=axs[i].transAxes,
@@ -77,8 +104,6 @@ def plotData(q):
                 fontsize=8,
                 bbox=dict(facecolor='white', alpha=0.5, edgecolor='gray')
             )
-
-            axs[i].plot(range(1, val.size+1), val, color='blue')
 
             axs[i].set_title(key)
             

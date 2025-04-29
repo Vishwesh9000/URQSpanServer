@@ -10,7 +10,7 @@ def send_measurements():
     while True:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((HOST, PORT))
-            m = f"Measurement{random.randint(1,10)}: {random.randint(1,100)}"
+            m = f"Measurement{random.randint(1,8)}, {random.randint(1,100)}"
             print(f"[SENDING]\t{m}")
             s.sendall(m.encode())
             time.sleep(.5)  # Change interval
