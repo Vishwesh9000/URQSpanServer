@@ -50,15 +50,17 @@ def plotData(q):
 
             mean = np.mean(val)
             stdDev = np.std(val)
+
+            axs[i].tick_params(axis='y', labelsize = 10)
             
             # plot lines
             for j in [-2,-1,1,2]:
-                axs[i].axhline(y=mean+j*stdDev, color='lightgray', linestyle=':')
+                axs[i].axhline(y=mean+j*stdDev, color='lightgray', linestyle=':',alpha=.5)
 
-            axs[i].axhline(y=mean+3*stdDev, color='red', linestyle='--')
-            axs[i].axhline(y=mean-3*stdDev, color='red', linestyle='--')
+            axs[i].axhline(y=mean+3*stdDev, color='red', linestyle='--', alpha=.5)
+            axs[i].axhline(y=mean-3*stdDev, color='red', linestyle='--',alpha=.5)
 
-            axs[i].axhline(y=mean, color='black', linestyle='--')
+            axs[i].axhline(y=mean, color='black', linestyle='--',alpha=.5)
 
             # Text
             axs[i].text(
