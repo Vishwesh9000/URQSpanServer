@@ -1,4 +1,5 @@
 import socket, matplotlib.pyplot as plt, time, random, numpy as np, csv, sys
+from matplotlib.widgets import Button
 from multiprocessing import Process, Queue
 
 graphDimensions = (2,4) #Rows and Columns of plots
@@ -42,7 +43,17 @@ def plotData(q):
     axs = axs.flatten()  
     for ax in axs:
         ax.ticklabel_format(useOffset=False)
-    plt.show(block=False)  
+    plt.show(block=False)
+
+    showLineGraph = True
+    def toggle_callback(event):
+        nonlocal showLineGraph
+        showLineGraph = not showLineGraph
+        print(f"[BUTTON STATE] {showLineGraph}")
+
+    ax_button = plt.axes([0.875, 0.01, 0.1, 0.05])
+    button = Button(ax_button, 'Toggle Graph Type')
+    button.on_clicked(toggle_callback)
 
     while True:
         while not q.empty():
@@ -74,46 +85,71 @@ def plotData(q):
                 cpk = float('-inf')
 
             axs[i].tick_params(axis='y', labelsize = 10)
-            
-            # Stat lines
+            if showLineGraph:
+                # Stat lines
 
-            # Standard Deviation Lines
-            for j in [-2,-1,1,2]:
-                axs[i].axhline(y=mean+j*stdDev, color='lightgray', linestyle=':',alpha=.5)
+                # Standard Deviation Lines
+                for j in [-2,-1,1,2]:
+                    axs[i].axhline(y=mean+j*stdDev, color='lightgray', linestyle=':',alpha=.5)
 
-            axs[i].axhline(y=mean+3*stdDev, color='red', linestyle='--', alpha=.5)
-            axs[i].axhline(y=mean-3*stdDev, color='red', linestyle='--',alpha=.5)
+                axs[i].axhline(y=mean+3*stdDev, color='red', linestyle='--', alpha=.5)
+                axs[i].axhline(y=mean-3*stdDev, color='red', linestyle='--',alpha=.5)
 
-            # Mean Line
-            axs[i].axhline(y=mean, color='black', linestyle='--',alpha=.5)
+                # Mean Line
+                axs[i].axhline(y=mean, color='black', linestyle='--',alpha=.5)
 
-            if expectedMean:
-                # Expected Mean Line
-                axs[i].axhline(y=expectedMean, color='green', linestyle='--',alpha=.5)
+                if expectedMean:
+                    # Expected Mean Line
+                    axs[i].axhline(y=expectedMean, color='green', linestyle='--',alpha=.5)
 
-                if tolerance:
-                    # Tolerance Lines
-                    for j in [1, -1]:
-                        axs[i].axhline(y=expectedMean+(tolerance*j), color='orange', linestyle='--',alpha=.5)
+                    if tolerance:
+                        # Tolerance Lines
+                        for j in [1, -1]:
+                            axs[i].axhline(y=expectedMean+(tolerance*j), color='orange', linestyle='--',alpha=.5)
 
-            # Graph lines
-            axs[i].plot(range(1, val.size+1), val, color='blue')
+                # Graph lines
+                axs[i].plot(range(1, val.size+1), val, color='blue')
 
-            # Red dots for outliers
-            for outlierIndex in outliers:
-                axs[i].plot(outlierIndex+1, val[outlierIndex], marker='.',color='red')
+                # Red dots for outliers
+                for outlierIndex in outliers:
+                    axs[i].plot(outlierIndex+1, val[outlierIndex], marker='.',color='red')
 
-            # Statistical Parameters Text
-            axs[i].text(
-                0.05, 0.95, f"μ={mean:.3f}\nσ={stdDev:.3f}\nCpk={cpk:.3f}",
-                transform=axs[i].transAxes,
-                verticalalignment='top',
-                fontsize=8,
-                bbox=dict(facecolor='white', alpha=0.5, edgecolor='gray')
-            )
-            
+                # Statistical Parameters Text
+                axs[i].text(
+                    0.05, 0.95, f"μ={mean:.3f}\nσ={stdDev:.3f}\nCpk={cpk:.3f}",
+                    transform=axs[i].transAxes,
+                    verticalalignment='top',
+                    fontsize=8,
+                    bbox=dict(facecolor='white', alpha=0.5, edgecolor='gray')
+                )
+            else:
+                # Stat lines
+
+                # Mean Line
+                axs[i].axvline(x=mean, color='black', linestyle='--',alpha=.5)
+
+                if expectedMean:
+                    # Expected Mean Line
+                    axs[i].axvline(x=expectedMean, color='green', linestyle='--',alpha=.5)
+
+                    if tolerance:
+                        # Tolerance Lines
+                        for j in [1, -1]:
+                            axs[i].axvline(x=expectedMean+(tolerance*j), color='orange', linestyle='--',alpha=.5)
+                # Plot histogram
+                numOfBins = 10
+                binArray = np.linspace(min(np.min(val), mean-tolerance), max(np.max(val), mean+tolerance), numOfBins + 1)
+                axs[i].hist(val, bins=binArray, edgecolor='black', linewidth=1)
+
+
+                axs[i].relim()
+                axs[i].autoscale_view() 
+
+
+
+                
         fig.canvas.draw()          
-        fig.canvas.flush_events()  
+        fig.canvas.flush_events()       
 
 def findIP():
     ips = socket.gethostbyname_ex(socket.gethostname())[2]
