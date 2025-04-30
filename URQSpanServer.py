@@ -3,10 +3,10 @@ from multiprocessing import Process, Queue
 
 graphDimensions = (2,4) #Rows and Columns of plots
 
-expectedMean = [None]*(graphDimensions[0]*graphDimensions[1]) #Expected mean for each graph
-expectedMean = [12, 20, 20, 25, 20, 10, 23, None] #Change or comment out to disable expectedMean
+expectedMeans = [None]*(graphDimensions[0]*graphDimensions[1]) #Expected mean for each graph
+expectedMeans = [12, 20, 20, 25, 20, 10, 23, None] #Change or comment out to disable expectedMean
 
-tolerance = [.15] * (graphDimensions[0]*graphDimensions[1]) #points that are not inside mean+-tolerance will be marked with a red dot 
+tolerances = [.15] * (graphDimensions[0]*graphDimensions[1]) #points that are not inside mean+-tolerance will be marked with a red dot 
                                                             #(set to None to disable)
 
 def listenForMeasurements(q):
@@ -50,21 +50,28 @@ def plotData(q):
             if m[0] not in measurements:
                 measurements[m[0]] = [np.array([m[1]]), []]
                 i = len(measurements)-1
-                if tolerance[i] and expectedMean[i] and abs(m[1]-expectedMean[i]) > tolerance[i]:
+                if tolerances[i] and expectedMeans[i] and abs(m[1]-expectedMeans[i]) > tolerances[i]:
                     measurements[m[0]][1].append(0)
             else:
                 measurements[m[0]][0] = np.append(measurements[m[0]][0], m[1])
 
                 i = list(measurements.keys()).index(m[0])
-                if tolerance[i] and expectedMean[i] and abs(m[1]-expectedMean[i]) > tolerance[i]:
+                if tolerances[i] and expectedMeans[i] and abs(m[1]-expectedMeans[i]) > tolerances[i]:
                     measurements[m[0]][1].append(measurements[m[0]][0].size-1)
 
         for i, (key, (val, outliers)) in enumerate(list(measurements.items())[:graphDimensions[0]*graphDimensions[1]]): #Limits measurements to number of plots
             axs[i].cla()
             axs[i].set_title(key)
 
+            expectedMean = expectedMeans[i]
+            tolerance = tolerances[i]
+
             mean = np.mean(val)
             stdDev = np.std(val)
+            if expectedMean and tolerance:
+                cpk = min(mean-(expectedMean-tolerance), expectedMean+tolerance-mean)/(3*stdDev)
+            else:
+                cpk = float('-inf')
 
             axs[i].tick_params(axis='y', labelsize = 10)
             
@@ -80,14 +87,14 @@ def plotData(q):
             # Mean Line
             axs[i].axhline(y=mean, color='black', linestyle='--',alpha=.5)
 
-            if expectedMean[i]:
+            if expectedMean:
                 # Expected Mean Line
-                axs[i].axhline(y=expectedMean[i], color='green', linestyle='--',alpha=.5)
+                axs[i].axhline(y=expectedMean, color='green', linestyle='--',alpha=.5)
 
-                if tolerance[i]:
+                if tolerance:
                     # Tolerance Lines
                     for j in [1, -1]:
-                        axs[i].axhline(y=expectedMean[i]+(tolerance[i]*j), color='orange', linestyle='--',alpha=.5)
+                        axs[i].axhline(y=expectedMean+(tolerance*j), color='orange', linestyle='--',alpha=.5)
 
             # Graph lines
             axs[i].plot(range(1, val.size+1), val, color='blue')
@@ -98,14 +105,12 @@ def plotData(q):
 
             # Statistical Parameters Text
             axs[i].text(
-                0.05, 0.95, f"μ={mean:.3f}\nσ={stdDev:.3f}",
+                0.05, 0.95, f"μ={mean:.3f}\nσ={stdDev:.3f}\nCpk={cpk:.3f}",
                 transform=axs[i].transAxes,
                 verticalalignment='top',
                 fontsize=8,
                 bbox=dict(facecolor='white', alpha=0.5, edgecolor='gray')
             )
-
-            axs[i].set_title(key)
             
         fig.canvas.draw()          
         fig.canvas.flush_events()  
