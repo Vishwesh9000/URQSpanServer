@@ -1,4 +1,4 @@
-import socket, matplotlib.pyplot as plt, time, random, numpy as np, csv, sys
+import socket, matplotlib.pyplot as plt, time, random, numpy as np, csv, sys, itertools
 from matplotlib.widgets import Button
 from multiprocessing import Process, Queue
 
@@ -45,15 +45,16 @@ def plotData(q):
         ax.ticklabel_format(useOffset=False)
     plt.show(block=False)
 
-    showLineGraph = True
-    def toggle_callback(event):
-        nonlocal showLineGraph
-        showLineGraph = not showLineGraph
-        print(f"[BUTTON STATE] {showLineGraph}")
+    graphCycler = itertools.cycle(["Line", "Histogram", "BoxPlot"])
+    graphType = next(graphCycler)
+    def cycleGraph(event):
+        nonlocal graphType, graphCycler
+        graphType = next(graphCycler)
+        print(f"[BUTTON STATE] {graphType}")
 
     ax_button = plt.axes([0.875, 0.01, 0.1, 0.05])
     button = Button(ax_button, 'Toggle Graph Type')
-    button.on_clicked(toggle_callback)
+    button.on_clicked(cycleGraph)
 
     while True:
         while not q.empty():
@@ -85,7 +86,7 @@ def plotData(q):
                 cpk = float('-inf')
 
             axs[i].tick_params(axis='y', labelsize = 10)
-            if showLineGraph:
+            if graphType == "Line":
                 # Stat lines
 
                 # Standard Deviation Lines
@@ -122,7 +123,8 @@ def plotData(q):
                     fontsize=8,
                     bbox=dict(facecolor='white', alpha=0.5, edgecolor='gray')
                 )
-            else:
+
+            elif graphType=="Histogram":
                 # Stat lines
 
                 # Mean Line
@@ -138,12 +140,18 @@ def plotData(q):
                             axs[i].axvline(x=expectedMean+(tolerance*j), color='orange', linestyle='--',alpha=.5)
                 # Plot histogram
                 numOfBins = 10
-                binArray = np.linspace(min(np.min(val), mean-tolerance), max(np.max(val), mean+tolerance), numOfBins + 1)
+                if tolerance and expectedMean:
+                    binArray = np.linspace(min(np.min(val), expectedMean-tolerance), max(np.max(val), expectedMean+tolerance), numOfBins + 1)
+                else:
+                    binArray = np.linspace(np.min(val), np.max(val), numOfBins + 1)
                 axs[i].hist(val, bins=binArray, edgecolor='black', linewidth=1)
 
 
                 axs[i].relim()
-                axs[i].autoscale_view() 
+                axs[i].autoscale_view()
+
+            elif graphType=="BoxPlot":
+                pass
 
 
 
