@@ -139,23 +139,56 @@ def plotData(q):
                         for j in [1, -1]:
                             axs[i].axvline(x=expectedMean+(tolerance*j), color='orange', linestyle='--',alpha=.5)
                 # Plot histogram
-                numOfBins = 10
+                numOfBins = 30
                 if tolerance and expectedMean:
-                    binArray = np.linspace(min(np.min(val), expectedMean-tolerance), max(np.max(val), expectedMean+tolerance), numOfBins + 1)
+                    if expectedMean > np.max(val):
+                        histMax = expectedMean
+                    else:
+                        histMax = max(np.max(val), expectedMean+tolerance)
+                    if expectedMean < np.min(val):
+                        histMin = expectedMean
+                    else: histMin = min(np.min(val), expectedMean-tolerance)
+
+                    binArray = np.linspace(histMin, histMax, numOfBins + 1)
                 else:
                     binArray = np.linspace(np.min(val), np.max(val), numOfBins + 1)
+                
                 axs[i].hist(val, bins=binArray, edgecolor='black', linewidth=1)
 
+                histMin -= (histMax-histMin)/20
+                histMax += (histMax-histMin)/20
 
-                axs[i].relim()
-                axs[i].autoscale_view()
+                axs[i].set_xlim(histMin, histMax)
+
 
             elif graphType=="BoxPlot":
-                pass
+                if expectedMean:
+                    # Expected Mean Line
+                    axs[i].axhline(y=expectedMean, color='green', linestyle='--',alpha=.5)
+
+                    if tolerance:
+                        # Tolerance Lines
+                        for j in [1, -1]:
+                            axs[i].axhline(y=expectedMean+(tolerance*j), color='orange', linestyle='--',alpha=.5)
+
+                # Plot Box Plot
+                axs[i].boxplot(val, vert=True, showmeans=True)
+
+                # Set y limits
+                if expectedMean > np.max(val): boxMax = expectedMean
+                else: boxMax = max(np.max(val), expectedMean+tolerance)
+
+                if expectedMean < np.min(val):boxMin = expectedMean
+                else: boxMin = min(np.min(val),expectedMean-tolerance)
+
+                boxMin -= (boxMax-boxMin)/20
+                boxMax += (boxMax-boxMin)/20
+                axs[i].set_ylim(boxMin,boxMax)
 
 
+            axs[i].relim()
+            axs[i].autoscale_view()
 
-                
         fig.canvas.draw()          
         fig.canvas.flush_events()       
 
