@@ -5,7 +5,7 @@ from multiprocessing import Process, Queue
 graphDimensions = {"Line":(2,4), "Histogram":(2,4), "BoxPlot":(1,8)} #Rows and Columns of plots
 
 expectedMeans = [None]*(graphDimensions["Line"][0]*graphDimensions["Line"][1]) #Expected mean for each graph
-expectedMeans = [12, 20, 20, 25, 20, 10, 23, None] #Change or comment out to disable expectedMean
+expectedMeans = [12, 20, 20, 25, 20, 10, 23, 5] #Change or comment out to disable expectedMean
 
 tolerances = [.15] * (graphDimensions["Line"][0]*graphDimensions["Line"][1]) #points that are not inside mean+-tolerance will be marked with a red dot 
                                                             #(set to None to disable)
@@ -52,8 +52,15 @@ def plotData(q):
         axs = axs.flatten()  
         for ax in axs:
             ax.ticklabel_format(useOffset=False)
-
-        fig.tight_layout()
+        
+        fig.subplots_adjust(
+            left=0.04,   # space on the left side (0.0 - 1.0)
+            right=.98,  # space on the right side (0.0 - 1.0)
+            top=0.95,    # space at the top
+            bottom=0.1, # space at the bottom
+            wspace=0.3,  # width space between subplots
+            hspace=0.4   # height space between subplots
+        )
 
     init_subplots()
     plt.show(block=False)
@@ -97,8 +104,10 @@ def plotData(q):
             else:
                 cpk = float('-inf')
 
-            axs[i].tick_params(axis='y', labelsize = 10)
+            axs[i].tick_params(axis='y', labelsize=9)
+            axs[i].tick_params(axis='x', labelsize=9)
             if graphType == "Line":
+                fig.subplots_adjust(wspace=.2, hspace=.2)
                 # Stat lines
 
                 # Standard Deviation Lines
@@ -137,6 +146,7 @@ def plotData(q):
                 )
 
             elif graphType=="Histogram":
+                fig.subplots_adjust(wspace=.15, hspace=.2)
                 # Stat lines
 
                 # Mean Line
@@ -174,6 +184,8 @@ def plotData(q):
 
 
             elif graphType=="BoxPlot":
+                fig.subplots_adjust(wspace=.4)
+                axs[i].tick_params(axis='x', which='both', bottom=False, labelbottom=False)
                 if expectedMean:
                     # Expected Mean Line
                     axs[i].axhline(y=expectedMean, color='green', linestyle='--',alpha=.5)
@@ -187,11 +199,16 @@ def plotData(q):
                 axs[i].boxplot(val, vert=True, showmeans=True)
 
                 # Set y limits
-                if expectedMean > np.max(val): boxMax = expectedMean
-                else: boxMax = max(np.max(val), expectedMean+tolerance)
+                if expectedMean:
+                    if expectedMean > np.max(val): boxMax = expectedMean
+                    else: boxMax = max(np.max(val), expectedMean+(tolerance if tolerance else 0))
+                else: boxMax = np.max(val)
 
-                if expectedMean < np.min(val):boxMin = expectedMean
-                else: boxMin = min(np.min(val),expectedMean-tolerance)
+
+                if expectedMean:
+                    if expectedMean < np.min(val):boxMin = expectedMean
+                    else: boxMin = min(np.min(val),expectedMean-(tolerance if tolerance else 0))
+                else: boxMin = np.min(val)
 
                 boxMin -= (boxMax-boxMin)/20
                 boxMax += (boxMax-boxMin)/20
