@@ -2,12 +2,12 @@ import socket, matplotlib.pyplot as plt, time, random, numpy as np, csv, sys, it
 from matplotlib.widgets import Button
 from multiprocessing import Process, Queue
 
-graphDimensions = (2,4) #Rows and Columns of plots
+graphDimensions = {"Line":(2,4), "Histogram":(2,4), "BoxPlot":(1,8)} #Rows and Columns of plots
 
-expectedMeans = [None]*(graphDimensions[0]*graphDimensions[1]) #Expected mean for each graph
+expectedMeans = [None]*(graphDimensions["Line"][0]*graphDimensions["Line"][1]) #Expected mean for each graph
 expectedMeans = [12, 20, 20, 25, 20, 10, 23, None] #Change or comment out to disable expectedMean
 
-tolerances = [.15] * (graphDimensions[0]*graphDimensions[1]) #points that are not inside mean+-tolerance will be marked with a red dot 
+tolerances = [.15] * (graphDimensions["Line"][0]*graphDimensions["Line"][1]) #points that are not inside mean+-tolerance will be marked with a red dot 
                                                             #(set to None to disable)
 
 def listenForMeasurements(q):
@@ -36,21 +36,33 @@ def listenForMeasurements(q):
                     writer.writerow(m)
                     print("[SAVED]")
 def plotData(q):
+    fig = plt.figure()
+    axs = []
     measurements = {}
     plt.ion()  # Enable interactive mode
 
-    fig, axs = plt.subplots(*graphDimensions) #shape and number of plots
-    axs = axs.flatten()  
-    for ax in axs:
-        ax.ticklabel_format(useOffset=False)
-    plt.show(block=False)
-
+    # Initialize Graph Cycler
     graphCycler = itertools.cycle(["Line", "Histogram", "BoxPlot"])
     graphType = next(graphCycler)
+    
+    def init_subplots(): #Creates the proper number of rows and columns of subplots based on graphType
+        nonlocal fig, axs
+        for ax in axs: ax.remove()
+        axs = fig.subplots(*graphDimensions[graphType]) #shape and number of plots
+        axs = axs.flatten()  
+        for ax in axs:
+            ax.ticklabel_format(useOffset=False)
+
+        fig.tight_layout()
+
+    init_subplots()
+    plt.show(block=False)
+    
     def cycleGraph(event):
         nonlocal graphType, graphCycler
         graphType = next(graphCycler)
         print(f"[BUTTON STATE] {graphType}")
+        init_subplots() #Update graph rows and columns to match graphType
 
     ax_button = plt.axes([0.875, 0.01, 0.1, 0.05])
     button = Button(ax_button, 'Toggle Graph Type')
@@ -71,7 +83,7 @@ def plotData(q):
                 if tolerances[i] and expectedMeans[i] and abs(m[1]-expectedMeans[i]) > tolerances[i]:
                     measurements[m[0]][1].append(measurements[m[0]][0].size-1)
 
-        for i, (key, (val, outliers)) in enumerate(list(measurements.items())[:graphDimensions[0]*graphDimensions[1]]): #Limits measurements to number of plots
+        for i, (key, (val, outliers)) in enumerate(list(measurements.items())[:graphDimensions["Line"][0]*graphDimensions["Line"][1]]): #Limits measurements to number of plots
             axs[i].cla()
             axs[i].set_title(key)
 
