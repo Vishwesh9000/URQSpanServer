@@ -1,7 +1,7 @@
 # URQSpanServer
 
 
-This project is a server-side Python application designed to collect and display measurements made by a QSpan measurement system on a UR robot. Socket messages sent by the robot are collected, plotted, and saved in 'measurements.csv'. Plotting is done on a multi-axis matplotlib plot, and data is logged in the following format f"{name},{value}". Socket messages are expected to follow a f"{name}:{value}" format as in Q-Span's measure block in PolyScope.
+This project is a server-side Python application designed to collect and display measurements made by a QSpan measurement system on a UR robot. Socket messages sent by the robot are collected, plotted, and saved in 'measurements.csv'. Plotting is done on a multi-axis matplotlib plot, and data is logged in the following format f"{name},{value}". Socket messages are expected to follow a f"{name},{value}" format as in Q-Span's measure block in PolyScope.
 
 
 ## Table of Contents
